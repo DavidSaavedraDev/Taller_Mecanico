@@ -1,7 +1,7 @@
 <?php
 // 1. Iniciar sesión para control de acceso
 session_start();
-
+    
 // 2. Cargar los controladores necesarios
 require_once __DIR__ . '/controllers/AuthController.php';
 require_once __DIR__ . '/controllers/ClienteController.php';
@@ -13,8 +13,8 @@ if (file_exists(__DIR__ . '/controllers/UsuarioController.php')) {
 
 // 3. Capturar la acción enviada por URL (por defecto 'clientes')
 $action = $_GET['action'] ?? 'clientes';
-$auth   = new AuthController();
 
+$auth   = new AuthController();
 // 4. Definir las rutas públicas (no requieren inicio de sesión)
 $rutas_publicas = ['login', 'autenticar', 'registro', 'registrar'];
 
