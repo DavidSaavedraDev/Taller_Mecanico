@@ -1,75 +1,161 @@
 <?php
+
+declare(strict_types=1);
+
 require_once __DIR__ . '/../models/Cliente.php';
+require_once __DIR__ . '/../models/AuditLog.php';
+require_once __DIR__ . '/../core/Authorization.php';
+require_once __DIR__ . '/../core/Session.php';
 
-class ClienteController {
-    private $model;
+class ClienteController
+{
+    private Cliente $model;
+    private AuditLog $auditLog;
 
-    public function __construct() {
+    public function __construct()
+    {
         $this->model = new Cliente();
+        $this->auditLog = new AuditLog();
+        Authorization::requirePermission('manage_clients');
     }
 
-    public function index() {
+    public function index(): void
+    {
+        Session::requireAuth();
         $clientes = $this->model->obtenerTodos();
         require_once __DIR__ . '/../views/clientes/index.php';
     }
 
-    public function crear() {
+    public function crear(): void
+    {
+        Session::requireAuth();
+        $error = Session::getFlash('error');
         require_once __DIR__ . '/../views/clientes/crear.php';
     }
 
-    public function guardar() {
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $documento = trim($_POST['documento'] ?? '');
-            $nombre    = trim($_POST['nombre'] ?? '');
-            $telefono  = trim($_POST['telefono'] ?? '');
-            $email     = trim($_POST['email'] ?? '');
-            $direccion = trim($_POST['direccion'] ?? '');
+    public function guardar(): void
+    {
+        Session::requireAuth();
 
-            if (!empty($documento) && !empty($nombre) && !empty($telefono)) {
-                $this->model->guardar($documento, $nombre, $telefono, $email, $direccion);
-                header("Location: index.php?action=clientes&msg=guardado");
-                exit();
-            }
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            redirect('index.php?action=clientes');
         }
+
+        try {
+            Session::verifyCsrf();
+        } catch (InvalidArgumentException $e) {
+            Session::setFlash('error', $e->getMessage());
+            redirect('index.php?action=crear_cliente');
+        }
+
+        $documento = sanitizeInput($_POST['documento'] ?? '');
+        $nombre = sanitizeInput($_POST['nombre'] ?? '');
+        $telefono = sanitizeInput($_POST['telefono'] ?? '');
+        $email = sanitizeInput($_POST['email'] ?? '');
+        $direccion = sanitizeInput($_POST['direccion'] ?? '');
+
+        if ($documento === '' || $nombre === '' || $telefono === '') {
+            Session::setFlash('error', 'Documentos, nombre y teléfono son obligatorios.');
+            redirect('index.php?action=crear_cliente');
+        }
+
+        $this->model->guardar($documento, $nombre, $telefono, $email, $direccion);
+        $this->registrarAuditoria('client.created', null, [
+            'documento' => $documento,
+            'nombre' => $nombre,
+        ]);
+        redirect('index.php?action=clientes&msg=guardado');
     }
 
-    public function editar() {
-        $id = $_GET['id'] ?? null;
-        if ($id) {
-            $cliente = $this->model->obtenerPorId($id);
-            if ($cliente) {
-                require_once __DIR__ . '/../views/clientes/editar.php';
-                return;
-            }
+    public function editar(): void
+    {
+        Session::requireAuth();
+
+        $id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
+        if ($id === false || $id === null) {
+            redirect('index.php?action=clientes');
         }
-        header("Location: index.php?action=clientes");
-        exit();
+
+        $cliente = $this->model->obtenerPorId((int) $id);
+        if (!$cliente) {
+            redirect('index.php?action=clientes');
+        }
+
+        require_once __DIR__ . '/../views/clientes/editar.php';
     }
 
-    public function actualizar() {
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $id        = $_POST['id'] ?? null;
-            $documento = trim($_POST['documento'] ?? '');
-            $nombre    = trim($_POST['nombre'] ?? '');
-            $telefono  = trim($_POST['telefono'] ?? '');
-            $email     = trim($_POST['email'] ?? '');
-            $direccion = trim($_POST['direccion'] ?? '');
+    public function actualizar(): void
+    {
+        Session::requireAuth();
 
-            if ($id && !empty($documento) && !empty($nombre)) {
-                $this->model->actualizar($id, $documento, $nombre, $telefono, $email, $direccion);
-                header("Location: index.php?action=clientes&msg=actualizado");
-                exit();
-            }
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            redirect('index.php?action=clientes');
         }
+
+        try {
+            Session::verifyCsrf();
+        } catch (InvalidArgumentException $e) {
+            Session::setFlash('error', $e->getMessage());
+            redirect('index.php?action=clientes');
+        }
+
+        $id = filter_input(INPUT_POST, 'id', FILTER_VALIDATE_INT);
+        $documento = sanitizeInput($_POST['documento'] ?? '');
+        $nombre = sanitizeInput($_POST['nombre'] ?? '');
+        $telefono = sanitizeInput($_POST['telefono'] ?? '');
+        $email = sanitizeInput($_POST['email'] ?? '');
+        $direccion = sanitizeInput($_POST['direccion'] ?? '');
+
+        if ($id === false || $id === null || $documento === '' || $nombre === '' || $telefono === '') {
+            Session::setFlash('error', 'No se pudo actualizar el cliente. Faltan datos obligatorios.');
+            redirect('index.php?action=clientes');
+        }
+
+        $this->model->actualizar((int) $id, $documento, $nombre, $telefono, $email, $direccion);
+        $this->registrarAuditoria('client.updated', (int) $id, [
+            'documento' => $documento,
+            'nombre' => $nombre,
+        ]);
+        redirect('index.php?action=clientes&msg=actualizado');
     }
 
-    public function eliminar() {
-        $id = $_GET['id'] ?? null;
-        if ($id) {
-            $this->model->eliminar($id);
-            header("Location: index.php?action=clientes&msg=eliminado");
-            exit();
+    public function eliminar(): void
+    {
+        Session::requireAuth();
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            redirect('index.php?action=clientes');
+        }
+
+        try {
+            Session::verifyCsrf();
+        } catch (InvalidArgumentException $e) {
+            Session::setFlash('error', $e->getMessage());
+            redirect('index.php?action=clientes');
+        }
+
+        $id = filter_input(INPUT_POST, 'id', FILTER_VALIDATE_INT);
+        if ($id === false || $id === null) {
+            redirect('index.php?action=clientes');
+        }
+
+        $this->model->eliminar((int) $id);
+        $this->registrarAuditoria('client.deleted', (int) $id);
+        redirect('index.php?action=clientes&msg=eliminado');
+    }
+
+    private function registrarAuditoria(string $accion, ?int $entidadId, array $detalles = []): void
+    {
+        try {
+            $this->auditLog->registrar(
+                (int) $_SESSION['user_id'],
+                $accion,
+                'cliente',
+                $entidadId,
+                $detalles
+            );
+        } catch (Throwable $exception) {
+            error_log('No se pudo registrar auditoría: ' . $exception->getMessage());
         }
     }
 }
-?>

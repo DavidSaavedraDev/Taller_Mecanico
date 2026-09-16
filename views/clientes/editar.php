@@ -8,6 +8,7 @@
             </div>
             <div class="card-body p-4">
                 <form action="index.php?action=actualizar_cliente" method="POST">
+                    <input type="hidden" name="csrf_token" value="<?= e(Session::csrfToken()); ?>">
                     <input type="hidden" name="id" value="<?= $cliente['id']; ?>">
 
                     <div class="row g-3">

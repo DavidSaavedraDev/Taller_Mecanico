@@ -8,6 +8,7 @@
             </div>
             <div class="card-body p-4">
                 <form action="index.php?action=guardar_cliente" method="POST">
+                    <input type="hidden" name="csrf_token" value="<?= e(Session::csrfToken()); ?>">
                     <div class="row g-3">
                         <div class="col-md-6">
                             <label class="form-label fw-bold">Documento / Cédula / NIT *</label>

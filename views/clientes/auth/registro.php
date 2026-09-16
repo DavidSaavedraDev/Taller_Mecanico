@@ -24,6 +24,7 @@
         <?php endif; ?>
 
         <form action="index.php?action=registrar" method="POST">
+            <input type="hidden" name="csrf_token" value="<?= e(Session::csrfToken()); ?>">
             <div class="form-floating mb-3 text-start">
                 <input type="text" name="nombre" class="form-control" id="nombre" placeholder="Tu Nombre Completo" required>
                 <label for="nombre"><i class="fa-solid fa-user me-1"></i> Nombre Completo</label>
@@ -39,13 +40,7 @@
                 <label for="password"><i class="fa-solid fa-lock me-1"></i> Contraseña</label>
             </div>
 
-            <div class="form-floating mb-3 text-start">
-                <select name="rol" class="form-select" id="rol">
-                    <option value="admin">Administrador</option>
-                    <option value="mecanico" selected>Mecánico / Recepción</option>
-                </select>
-                <label for="rol"><i class="fa-solid fa-user-gear me-1"></i> Rol de Usuario</label>
-            </div>
+            <input type="hidden" name="rol" value="mecanico">
 
             <button type="submit" class="btn btn-warning w-100 fw-bold py-2 mt-2">
                 <i class="fa-solid fa-check-circle me-1"></i> Registrarse e Iniciar
@@ -53,7 +48,9 @@
         </form>
 
         <hr class="my-3">
-        <p class="small mb-0">¿Ya tienes una cuenta? <a href="index.php?action=login" class="fw-bold text-decoration-none">Inicia Sesión aquí</a></p>
+        <a href="index.php?action=login" class="btn btn-outline-secondary w-100">
+            <i class="fa-solid fa-arrow-left me-1"></i> Volver al inicio de sesión
+        </a>
     </div>
 </div>
 

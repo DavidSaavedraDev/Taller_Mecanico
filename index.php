@@ -1,32 +1,49 @@
 <?php
-// 1. Iniciar sesión para control de acceso
-session_start();
-    
-// 2. Cargar los controladores necesarios
+
+declare(strict_types=1);
+
+require_once __DIR__ . '/config/app.php';
+require_once __DIR__ . '/core/helpers.php';
+require_once __DIR__ . '/core/Session.php';
+require_once __DIR__ . '/core/Authorization.php';
 require_once __DIR__ . '/controllers/AuthController.php';
 require_once __DIR__ . '/controllers/ClienteController.php';
+require_once __DIR__ . '/controllers/OrdenTrabajoController.php';
+require_once __DIR__ . '/controllers/AuditController.php';
 
-// Cargar Controlador de Usuarios solo si el archivo existe
 if (file_exists(__DIR__ . '/controllers/UsuarioController.php')) {
     require_once __DIR__ . '/controllers/UsuarioController.php';
 }
 
-// 3. Capturar la acción enviada por URL (por defecto 'clientes')
-$action = $_GET['action'] ?? 'clientes';
+$requestedAction = $_GET['action'] ?? null;
+$action = strtolower((string) ($requestedAction ?? ''));
+if ($action === '') {
+    $action = Session::isAuthenticated() && Authorization::role() === Authorization::MECANICO
+        ? 'ordenes'
+        : 'clientes';
+}
+$auth = new AuthController();
+$rutasPublicas = [
+    'login',
+    'autenticar',
+    'registro',
+    'registrar',
+    'olvide_password',
+    'enviar_pin',
+    'validar_pin',
+    'nueva_password',
+    'guardar_password',
+];
 
-$auth   = new AuthController();
-// 4. Definir las rutas públicas (no requieren inicio de sesión)
-$rutas_publicas = ['login', 'autenticar', 'registro', 'registrar'];
-
-// 5. Middleware de Seguridad: Si no hay sesión y la ruta no es pública, redirigir al login
-if (!isset($_SESSION['user_id']) && !in_array($action, $rutas_publicas)) {
-    header("Location: index.php?action=login");
-    exit();
+if (!Session::isAuthenticated() && !in_array($action, $rutasPublicas, true)) {
+    redirect('index.php?action=login');
 }
 
-// 6. Enrutador Principal
+if (Session::isAuthenticated()) {
+    Authorization::authorizeAction($action);
+}
+
 switch ($action) {
-    // --- AUTENTICACIÓN ---
     case 'login':
         $auth->login();
         break;
@@ -43,11 +60,34 @@ switch ($action) {
         $auth->registrar();
         break;
 
+    case 'olvide_password':
+        $auth->mostrarRecuperacion();
+        break;
+
+    case 'enviar_pin':
+        $auth->enviarPin();
+        break;
+
+    case 'validar_pin':
+        $auth->validarPin();
+        break;
+
+    case 'reenviar_pin':
+        $auth->reenviarPin();
+        break;
+
+    case 'nueva_password':
+        $auth->nuevaPassword();
+        break;
+
+    case 'guardar_password':
+        $auth->guardarPassword();
+        break;
+
     case 'logout':
         $auth->logout();
         break;
 
-    // --- CRUD DE CLIENTES ---
     case 'clientes':
         $controller = new ClienteController();
         $controller->index();
@@ -78,13 +118,37 @@ switch ($action) {
         $controller->eliminar();
         break;
 
-    // --- GESTIÓN DE USUARIOS (Opcional) ---
+    case 'ordenes':
+        $controller = new OrdenTrabajoController();
+        $controller->index();
+        break;
+
+    case 'crear_orden':
+        $controller = new OrdenTrabajoController();
+        $controller->crear();
+        break;
+
+    case 'guardar_orden':
+        $controller = new OrdenTrabajoController();
+        $controller->guardar();
+        break;
+
+    case 'ver_orden':
+        $controller = new OrdenTrabajoController();
+        $controller->ver();
+        break;
+
+    case 'actualizar_estado_orden':
+        $controller = new OrdenTrabajoController();
+        $controller->actualizarEstado();
+        break;
+
     case 'usuarios':
         if (class_exists('UsuarioController')) {
             $userController = new UsuarioController();
             $userController->index();
         } else {
-            header("Location: index.php?action=clientes");
+            redirect('index.php?action=clientes');
         }
         break;
 
@@ -93,14 +157,17 @@ switch ($action) {
             $userController = new UsuarioController();
             $userController->cambiarRol();
         } else {
-            header("Location: index.php?action=clientes");
+            redirect('index.php?action=clientes');
         }
         break;
 
-    // --- RUTA POR DEFECTO ---
+    case 'auditoria':
+    case 'audit_logs':
+        (new AuditController())->index();
+        break;
+
     default:
         $controller = new ClienteController();
         $controller->index();
         break;
 }
-?>

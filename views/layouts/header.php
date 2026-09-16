@@ -23,21 +23,30 @@
         <div class="collapse navbar-collapse" id="navbarNav">
             <!-- Menú de Navegación Principal -->
             <ul class="navbar-nav me-auto">
+                <?php if (Authorization::can('manage_clients')): ?>
                 <li class="nav-item">
-                    <a class="nav-link active" href="index.php?action=clientes">
+                    <a class="nav-link <?= strtolower((string) ($_GET['action'] ?? 'clientes')) === 'clientes' ? 'active' : ''; ?>" href="index.php?action=clientes">
                         <i class="fa-solid fa-users me-1"></i> Clientes
                     </a>
                 </li>
+                <?php endif; ?>
                 <li class="nav-item">
-                    <a class="nav-link text-secondary" href="#">
-                        <i class="fa-solid fa-car me-1"></i> Vehículos
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link text-secondary" href="#">
+                    <a class="nav-link <?= in_array(strtolower((string) ($_GET['action'] ?? '')), ['ordenes', 'crear_orden', 'guardar_orden', 'ver_orden', 'actualizar_estado_orden'], true) ? 'active' : ''; ?>" href="index.php?action=ordenes">
                         <i class="fa-solid fa-clipboard-list me-1"></i> Órdenes
                     </a>
                 </li>
+                <?php if (Authorization::can('manage_users')): ?>
+                <li class="nav-item">
+                    <a class="nav-link <?= in_array(strtolower((string) ($_GET['action'] ?? '')), ['usuarios', 'cambiar_rol'], true) ? 'active' : ''; ?>" href="index.php?action=usuarios">
+                        <i class="fa-solid fa-user-shield me-1"></i> Usuarios
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link <?= in_array(strtolower((string) ($_GET['action'] ?? '')), ['auditoria', 'audit_logs'], true) ? 'active' : ''; ?>" href="index.php?action=auditoria">
+                        <i class="fa-solid fa-clock-rotate-left me-1"></i> Auditoría
+                    </a>
+                </li>
+                <?php endif; ?>
             </ul>
 
             <!-- Sección de Usuario y Rol -->
