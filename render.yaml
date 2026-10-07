@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: Taller_Mecanico
-    env: php
-    buildCommand: ""
-    startCommand: "php -S 0.0.0.0:$PORT -t ."
+    name: taller-mecanico
+    env: docker
+    plan: free
+    autoDeploy: true
