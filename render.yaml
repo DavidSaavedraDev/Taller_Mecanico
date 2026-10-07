@@ -1,6 +1,15 @@
 services:
   - type: web
-    name: taller-mecanico
+    name: taller-mechanico
     env: docker
     plan: free
     autoDeploy: true
+    envVars:
+      - key: DB_HOST
+        value: "tu_host_remoto"
+      - key: DB_NAME
+        value: "tu_nombre_de_bd"
+      - key: DB_USER
+        value: "tu_usuario"
+      - key: DB_PASS
+        value: "tu_contraseña"
