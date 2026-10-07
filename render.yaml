@@ -1,15 +1,11 @@
-services:
-  - type: web
-    name: taller-mechanico
-    env: docker
-    plan: free
-    autoDeploy: true
-    envVars:
-      - key: DB_HOST
-        value: "tu_host_remoto"
-      - key: DB_NAME
-        value: "tu_nombre_de_bd"
-      - key: DB_USER
-        value: "tu_usuario"
-      - key: DB_PASS
-        value: "tu_contraseña"
+envVars:
+  - key: DB_HOST
+    value: "aiven-2a96aec-davidsaavedrapinzon13-4cbb.f.aivencloud.com"
+  - key: DB_PORT
+    value: "24518"
+  - key: DB_NAME
+    value: "defaultdb"
+  - key: DB_USER
+    value: "avnadmin"
+  - key: DB_PASS
+    value: "tu_contraseña_de_aiven"
